@@ -1,4 +1,9 @@
-venv
+venv/
 .env
-frontend/node_modules
-__pycache__
+frontend/node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
