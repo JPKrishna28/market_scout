@@ -1,0 +1,1353 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "Enterprise monitoring for the Market Intelligence Scout pipeline — tracks pipeline health, LLM usage, scraping performance, and feature intelligence metrics.",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "panels": [
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 100,
+            "title": "🔍 Pipeline Overview",
+            "type": "row"
+        },
+        {
+            "id": 1,
+            "title": "Total Pipeline Runs",
+            "description": "Cumulative count of all pipeline executions",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 4,
+                "x": 0,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "sum(pipeline_runs_total)",
+                    "legendFormat": "Total Runs",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "#1a1a2e"
+                            },
+                            {
+                                "value": 1,
+                                "color": "#6366f1"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto"
+            }
+        },
+        {
+            "id": 2,
+            "title": "Success Rate",
+            "description": "Percentage of successful pipeline completions",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 4,
+                "x": 4,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "sum(pipeline_runs_total{status='completed'}) / sum(pipeline_runs_total) * 100",
+                    "legendFormat": "Success %",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "decimals": 1,
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "#ef4444"
+                            },
+                            {
+                                "value": 50,
+                                "color": "#f59e0b"
+                            },
+                            {
+                                "value": 80,
+                                "color": "#10b981"
+                            }
+                        ]
+                    },
+                    "min": 0,
+                    "max": 100
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "textMode": "auto"
+            }
+        },
+        {
+            "id": 3,
+            "title": "Active Pipelines",
+            "description": "Currently running pipeline instances",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 4,
+                "x": 8,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "active_pipelines",
+                    "legendFormat": "Active",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "#1e293b"
+                            },
+                            {
+                                "value": 0,
+                                "color": "#1e293b"
+                            },
+                            {
+                                "value": 1,
+                                "color": "#3b82f6"
+                            },
+                            {
+                                "value": 3,
+                                "color": "#f59e0b"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "textMode": "value_and_name"
+            }
+        },
+        {
+            "id": 4,
+            "title": "Avg Report Time (p95)",
+            "description": "95th percentile latency for the /run-agent endpoint",
+            "type": "gauge",
+            "gridPos": {
+                "h": 5,
+                "w": 4,
+                "x": 12,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(api_request_duration_seconds_bucket{endpoint='/run-agent'}[5m])) by (le))",
+                    "legendFormat": "p95",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s",
+                    "decimals": 1,
+                    "min": 0,
+                    "max": 300,
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "#10b981"
+                            },
+                            {
+                                "value": 30,
+                                "color": "#10b981"
+                            },
+                            {
+                                "value": 60,
+                                "color": "#f59e0b"
+                            },
+                            {
+                                "value": 120,
+                                "color": "#ef4444"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true
+            }
+        },
+        {
+            "id": 5,
+            "title": "Features Verified",
+            "description": "Total features that passed cross-source verification",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 4,
+                "x": 16,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "sum(features_verified_total)",
+                    "legendFormat": "Verified",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "#1a1a2e"
+                            },
+                            {
+                                "value": 1,
+                                "color": "#8b5cf6"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "textMode": "auto"
+            }
+        },
+        {
+            "id": 6,
+            "title": "URLs Discarded",
+            "description": "Articles discarded by date validation (expired or missing date)",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 4,
+                "x": 20,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "sum(urls_discarded_total)",
+                    "legendFormat": "Discarded",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "#1a1a2e"
+                            },
+                            {
+                                "value": 1,
+                                "color": "#f59e0b"
+                            },
+                            {
+                                "value": 50,
+                                "color": "#ef4444"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "textMode": "auto"
+            }
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 6
+            },
+            "id": 101,
+            "title": "⚡ Pipeline Performance",
+            "type": "row"
+        },
+        {
+            "id": 10,
+            "title": "Pipeline Runs Over Time",
+            "description": "Rate of pipeline executions split by outcome",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 7
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "increase(pipeline_runs_total{status='completed'}[5m])",
+                    "legendFormat": "✅ Completed",
+                    "refId": "A"
+                },
+                {
+                    "expr": "increase(pipeline_runs_total{status='error'}[5m])",
+                    "legendFormat": "❌ Error",
+                    "refId": "B"
+                },
+                {
+                    "expr": "increase(pipeline_runs_total{status='guardrail_blocked'}[5m])",
+                    "legendFormat": "🛡️ Blocked",
+                    "refId": "C"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "barAlignment": 0,
+                        "fillOpacity": 80,
+                        "lineWidth": 0,
+                        "pointSize": 5,
+                        "stacking": {
+                            "mode": "normal",
+                            "group": "A"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "axisSoftMin": 0
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "✅ Completed"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#10b981",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "❌ Error"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#ef4444",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "🛡️ Blocked"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#f59e0b",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "sum"
+                    ]
+                }
+            }
+        },
+        {
+            "id": 11,
+            "title": "Node Execution Latency",
+            "description": "Time spent in each pipeline node (p95)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 7
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(node_latency_seconds_bucket[5m])) by (le, node_name))",
+                    "legendFormat": "{{node_name}}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 15,
+                        "lineWidth": 2,
+                        "pointSize": 4,
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "axisSoftMin": 0
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                }
+            }
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 15
+            },
+            "id": 102,
+            "title": "🤖 LLM & Intelligence Metrics",
+            "type": "row"
+        },
+        {
+            "id": 20,
+            "title": "LLM Calls by Agent",
+            "description": "Total LLM API calls per agent — success, retry, and failure",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "increase(llm_calls_total{status='success'}[5m])",
+                    "legendFormat": "✅ {{agent_name}}",
+                    "refId": "A"
+                },
+                {
+                    "expr": "increase(llm_calls_total{status='failure'}[5m])",
+                    "legendFormat": "❌ {{agent_name}}",
+                    "refId": "B"
+                },
+                {
+                    "expr": "increase(llm_calls_total{status='retry'}[5m])",
+                    "legendFormat": "🔄 {{agent_name}}",
+                    "refId": "C"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "fillOpacity": 70,
+                        "lineWidth": 0,
+                        "stacking": {
+                            "mode": "normal",
+                            "group": "A"
+                        },
+                        "showPoints": "never",
+                        "axisSoftMin": 0
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "sum"
+                    ]
+                }
+            }
+        },
+        {
+            "id": 21,
+            "title": "LLM Token Usage",
+            "description": "Prompt and completion tokens consumed by each agent",
+            "type": "bargauge",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "sum by (agent_name, token_type) (increase(llm_tokens_total[1h]))",
+                    "legendFormat": "{{agent_name}} — {{token_type}}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "#6366f1"
+                            },
+                            {
+                                "value": 5000,
+                                "color": "#f59e0b"
+                            },
+                            {
+                                "value": 10000,
+                                "color": "#ef4444"
+                            }
+                        ]
+                    },
+                    "min": 0
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "horizontal",
+                "displayMode": "gradient",
+                "showUnfilled": true,
+                "valueMode": "text",
+                "minVizWidth": 0,
+                "minVizHeight": 10
+            }
+        },
+        {
+            "id": 22,
+            "title": "LLM Response Latency (p95)",
+            "description": "95th percentile response time per LLM call by agent",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 24
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(llm_call_duration_seconds_bucket[5m])) by (le, agent_name))",
+                    "legendFormat": "{{agent_name}}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 20,
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "axisSoftMin": 0
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "calcs": [
+                        "mean",
+                        "max",
+                        "last"
+                    ]
+                }
+            }
+        },
+        {
+            "id": 23,
+            "title": "Confidence Score Distribution",
+            "description": "Distribution of feature confidence scores across all pipeline runs",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 24
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "increase(feature_confidence_score_bucket[30m])",
+                    "legendFormat": "≤ {{le}}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "fillOpacity": 60,
+                        "lineWidth": 0,
+                        "stacking": {
+                            "mode": "normal",
+                            "group": "A"
+                        },
+                        "showPoints": "never",
+                        "axisSoftMin": 0
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            }
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 32
+            },
+            "id": 103,
+            "title": "🌐 Scraping & Cache",
+            "type": "row"
+        },
+        {
+            "id": 30,
+            "title": "Scraper Strategy Performance",
+            "description": "Success/failure counts per scraping strategy (Newspaper3k, BS4, Playwright)",
+            "type": "bargauge",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 33
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "sum by (strategy, status) (increase(scraper_attempts_total[1h]))",
+                    "legendFormat": "{{strategy}} — {{status}}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "#6366f1"
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byRegexp",
+                            "options": ".*success.*"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#10b981",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byRegexp",
+                            "options": ".*failure.*"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#ef4444",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "horizontal",
+                "displayMode": "gradient",
+                "showUnfilled": true,
+                "minVizWidth": 0,
+                "minVizHeight": 10
+            }
+        },
+        {
+            "id": 31,
+            "title": "Cache Operations",
+            "description": "Redis cache hit/miss/error rates over time",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 33
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "increase(cache_operations_total{status='hit'}[5m])",
+                    "legendFormat": "✅ Cache Hit",
+                    "refId": "A"
+                },
+                {
+                    "expr": "increase(cache_operations_total{status='miss'}[5m])",
+                    "legendFormat": "⬜ Cache Miss",
+                    "refId": "B"
+                },
+                {
+                    "expr": "increase(cache_operations_total{status='error'}[5m])",
+                    "legendFormat": "❌ Cache Error",
+                    "refId": "C"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 25,
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "axisSoftMin": 0
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "✅ Cache Hit"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#10b981",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "⬜ Cache Miss"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#94a3b8",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "❌ Cache Error"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#ef4444",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "sum"
+                    ]
+                }
+            }
+        },
+        {
+            "id": 32,
+            "title": "Features Extracted by Category",
+            "description": "Breakdown of extracted features by company and category",
+            "type": "piechart",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 41
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "sum by (category) (increase(features_extracted_total[24h]))",
+                    "legendFormat": "{{category}}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "pieType": "donut",
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "values": [
+                        "value",
+                        "percent"
+                    ]
+                }
+            }
+        },
+        {
+            "id": 33,
+            "title": "Sources Analysed per Run",
+            "description": "Median number of sources processed in each pipeline execution",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 41
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.5, sum(rate(sources_analysed_per_run_bucket[5m])) by (le))",
+                    "legendFormat": "Median sources",
+                    "refId": "A"
+                },
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(sources_analysed_per_run_bucket[5m])) by (le))",
+                    "legendFormat": "p95 sources",
+                    "refId": "B"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 20,
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "showPoints": "auto",
+                        "axisSoftMin": 0
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "last"
+                    ]
+                }
+            }
+        },
+        {
+            "id": 34,
+            "title": "URLs Discarded Breakdown",
+            "description": "Reasons for URL discard — expired dates vs missing dates",
+            "type": "piechart",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 41
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "sum by (reason) (increase(urls_discarded_total[24h]))",
+                    "legendFormat": "{{reason}}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "expired"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#f59e0b",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "no_date"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#94a3b8",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "pieType": "donut",
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "values": [
+                        "value",
+                        "percent"
+                    ]
+                }
+            }
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 49
+            },
+            "id": 104,
+            "title": "📊 Node Execution Details",
+            "type": "row"
+        },
+        {
+            "id": 40,
+            "title": "Node Success / Failure",
+            "description": "Execution outcome for each pipeline node",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 50
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+            },
+            "targets": [
+                {
+                    "expr": "increase(node_executions_total{status='success'}[5m])",
+                    "legendFormat": "✅ {{node_name}}",
+                    "refId": "A"
+                },
+                {
+                    "expr": "increase(node_executions_total{status='failure'}[5m])",
+                    "legendFormat": "❌ {{node_name}}",
+                    "refId": "B"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "fillOpacity": 70,
+                        "lineWidth": 0,
+                        "stacking": {
+                            "mode": "normal",
+                            "group": "A"
+                        },
+                        "showPoints": "never",
+                        "axisSoftMin": 0
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "sum"
+                    ]
+                }
+            }
+        }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 39,
+    "style": "dark",
+    "tags": [
+        "market-intelligence",
+        "pipeline",
+        "llm",
+        "monitoring"
+    ],
+    "templating": {
+        "list": [
+            {
+                "current": {
+                    "selected": false,
+                    "text": "Prometheus",
+                    "value": "Prometheus"
+                },
+                "hide": 0,
+                "includeAll": false,
+                "multi": false,
+                "name": "DS_PROMETHEUS",
+                "options": [],
+                "query": "prometheus",
+                "refresh": 1,
+                "regex": "",
+                "skipUrlSync": false,
+                "type": "datasource"
+            }
+        ]
+    },
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {
+        "refresh_intervals": [
+            "5s",
+            "10s",
+            "30s",
+            "1m",
+            "5m"
+        ]
+    },
+    "timezone": "browser",
+    "title": "Market Intelligence Scout",
+    "uid": "market-scout-main",
+    "version": 2
+}

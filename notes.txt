@@ -1,0 +1,16 @@
+App: http://localhost:8000
+Swagger: http://localhost:8000/docs
+Metrics: http://localhost:8000/metrics
+Prometheus: http://localhost:9090
+Grafana: http://localhost:3000 (admin/admin)
+
+To start docker services- docker compose up -d
+To check the running status- docker compose ps
+To stop the services- docker compose down
+To start the app locally- uvicorn app.main:app --reload 
+To start the frontend- npm run dev
+To access the postgres database- docker exec -it market_postgres psql -U admin -d market_db
+To access the redis database- docker exec -it market_redis redis-cli
+
+
+pip freeze > requirements.txt

@@ -1,0 +1,797 @@
+================================================================================
+        MARKET INTELLIGENCE SCOUT — COMPLETE PROJECT EXPLANATION
+================================================================================
+
+This document explains EVERYTHING in the Market Intelligence Scout project —
+every file, every module, every technology, and how they all connect together.
+
+
+================================================================================
+1. WHAT IS THIS PROJECT?
+================================================================================
+
+Market Intelligence Scout is an AI-powered competitive intelligence system.
+You give it a company name (e.g. "OpenAI"), and it:
+
+  1. Generates smart search queries using an LLM
+  2. Searches the web using the Tavily search API
+  3. Scrapes the top articles using 3 different scraping strategies
+  4. Filters out anything older than 7 days
+  5. Removes non-technical content
+  6. Scores each source's authority/credibility
+  7. Extracts technical features using an LLM
+  8. Cross-verifies features across multiple sources using SBERT embeddings
+  9. Calculates confidence scores for each feature
+  10. Generates an executive intelligence report with citations
+
+The result is a structured briefing document with verified technical features,
+confidence scores, source citations, and an executive summary.
+
+
+================================================================================
+2. TECHNOLOGY STACK
+================================================================================
+
+BACKEND:
+  • Python 3.10+           — Core language
+  • FastAPI                 — REST API framework (async, auto-docs at /docs)
+  • LangGraph              — Agentic pipeline orchestrator (graph-based workflow)
+  • NVIDIA NIM (LLaMA 3.3) — LLM engine via OpenAI-compatible API
+  • Tavily API              — Web search engine for finding latest articles
+  • Sentence-BERT (SBERT)  — Semantic similarity for cross-source verification
+  • PostgreSQL 15           — Relational database for persistent storage
+  • SQLAlchemy              — ORM for database operations
+  • Redis 7                 — In-memory cache + rate limiting
+  • Pydantic                — Request/response validation and settings
+
+OBSERVABILITY:
+  • Prometheus              — Metrics collection (14 custom metrics)
+  • Grafana                 — Dashboard visualization (16 panels, 4 sections)
+  • OpenTelemetry           — Distributed tracing
+
+FRONTEND:
+  • React 19 + Vite         — SPA frontend framework
+  • React Router            — Client-side page routing
+  • React Icons             — Icon library
+
+INFRASTRUCTURE:
+  • Docker + Docker Compose — Container orchestration (5 services)
+  • Dockerfile              — Multi-stage Python container
+
+
+================================================================================
+3. PROJECT STRUCTURE (FILE BY FILE)
+================================================================================
+
+Market_Scout/
+│
+├── .env                        # API keys (NVIDIA_API_KEY, TAVILY_API_KEY, etc.)
+├── .dockerignore               # Files excluded from Docker build
+├── Dockerfile                  # Container image definition
+├── docker-compose.yaml         # All 5 services (app, postgres, redis, prometheus, grafana)
+├── requirements.txt            # Python dependencies (pip freeze output)
+├── notes.txt                   # Developer notes and quick-reference URLs
+├── architecture_overview.md    # High-level architecture diagram
+│
+├── app/                        # FastAPI application core
+│   ├── __init__.py
+│   ├── config.py               # Centralised settings (Pydantic BaseSettings)
+│   └── main.py                 # FastAPI app, endpoints, middleware, schemas
+│
+├── graph/                      # LangGraph pipeline definition
+│   ├── __init__.py
+│   ├── state.py                # TypedDict state schemas (GraphState)
+│   └── builder.py              # Graph assembly, node registration, edges
+│
+├── nodes/                      # Deterministic pipeline nodes (rule-based, no LLM)
+│   ├── __init__.py
+│   ├── guardrails.py           # Security: sanitisation, format, keywords, rate limit
+│   ├── search_execution.py     # Tavily search + domain authority scoring
+│   ├── date_validation.py      # 7-day recency filter
+│   ├── content_filter.py       # Technical relevance classifier
+│   ├── authority_check.py      # Source credibility scoring
+│   ├── feature_extraction.py   # LLM-based feature extraction
+│   ├── verification.py         # SBERT cross-source clustering
+│   └── scoring.py              # Multi-signal confidence scoring formula
+│
+├── agents/                     # LLM-powered agent nodes
+│   ├── __init__.py
+│   ├── search_planner.py       # Generates 3-5 search queries via LLM
+│   ├── scraper_strategy.py     # 3-tier web scraping (Newspaper3k, BS4, Playwright)
+│   └── synthesis.py            # Executive report generation via LLM
+│
+├── llm/                        # LLM client abstraction
+│   ├── __init__.py
+│   └── nvidia_client.py        # OpenAI-compatible client for NVIDIA NIM
+│
+├── database/                   # PostgreSQL ORM layer
+│   ├── __init__.py
+│   ├── session.py              # Engine, session factory, Base
+│   ├── models.py               # SQLAlchemy models (Competitor, Feature, Report)
+│   ├── schemas.py              # Pydantic schemas for DB operations
+│   └── crud.py                 # Create/read/update/delete operations
+│
+├── cache/                      # Redis caching layer
+│   ├── __init__.py
+│   └── redis_client.py         # get_cache, set_cache, rate limiting, audit logs
+│
+├── observability/              # Monitoring and tracing
+│   ├── __init__.py
+│   ├── metrics.py              # 14 Prometheus metrics definitions
+│   └── tracing.py              # OpenTelemetry setup + trace_node context manager
+│
+├── monitoring/                 # Infrastructure configs
+│   ├── prometheus.yml          # Prometheus scrape config
+│   └── grafana/
+│       ├── dashboards/
+│       │   └── market_scout.json    # Grafana dashboard (16 panels)
+│       └── provisioning/
+│           ├── datasources/
+│           │   └── datasource.yml   # Prometheus data source config
+│           └── dashboards/
+│               └── dashboard.yml    # Dashboard auto-provisioning
+│
+└── frontend/                   # React SPA
+    ├── index.html              # HTML entry point
+    ├── package.json            # NPM dependencies
+    ├── vite.config.js          # Vite build configuration
+    └── src/
+        ├── main.jsx            # React root render
+        ├── App.jsx             # Router + layout shell
+        ├── api.js              # Backend API service layer
+        ├── index.css           # Global design system (CSS variables, dark theme)
+        ├── components/
+        │   ├── Sidebar.jsx     # Navigation sidebar
+        │   ├── Sidebar.css
+        │   ├── Header.jsx      # Top header bar
+        │   └── Header.css
+        └── pages/
+            ├── Dashboard.jsx   # Overview + quick actions + pipeline visualisation
+            ├── Dashboard.css
+            ├── RunPipeline.jsx # Company input form + live results display
+            ├── RunPipeline.css
+            ├── Reports.jsx     # Historical report search + expandable cards
+            ├── Reports.css
+            ├── Competitors.jsx # Tracked companies grid
+            └── Competitors.css
+
+
+================================================================================
+4. THE PIPELINE — HOW IT WORKS (STEP BY STEP)
+================================================================================
+
+The pipeline is a LangGraph StateGraph with 11 functional nodes and 6 error-
+exit nodes. Each node reads from and writes to a shared GraphState dictionary.
+
+--- STEP 1: GUARDRAILS (nodes/guardrails.py) ---
+
+Purpose: Security firewall for input validation
+What it does:
+  • Strips HTML tags from the company name
+  • Unescapes HTML entities (e.g. &amp; → &)
+  • Collapses whitespace
+  • Checks the name is 2-200 characters
+  • Validates against a regex: letters, numbers, spaces, dots, hyphens, ampersands
+  • Checks for blocked keywords ("hack", "exploit", "jailbreak", "system prompt", etc.)
+  • Enforces Redis-backed rate limiting (10 requests per 60 seconds)
+  • Optionally runs an LLM semantic check at temperature=0
+
+Writes to state: company_name (sanitised), error (if blocked)
+Routed by: _check_guardrail → "search_planner" or "error_exit"
+
+
+--- STEP 2: SEARCH PLANNER (agents/search_planner.py) ---
+
+Purpose: Generate strategic search queries using the LLM
+What it does:
+  • Sends a system prompt to the LLM asking for 3-5 distinct search queries
+  • Each query targets different aspects: release notes, API updates, blog posts
+  • Validates output with Pydantic (SearchPlannerOutput model)
+  • Strips whitespace, enforces min/max query count (1-5)
+  • Caches results in Redis to avoid duplicate LLM calls
+
+Writes to state: search_queries (list of strings)
+Example output: ["OpenAI release notes 2026", "OpenAI new API features", "OpenAI GPT updates"]
+
+
+--- STEP 3: SEARCH EXECUTION (nodes/search_execution.py) ---
+
+Purpose: Execute searches and filter by domain authority
+What it does:
+  • Calls the Tavily API with each query (advanced depth, 15 results max)
+  • For each result, scores the domain authority:
+      - Official docs (docs.*, developer.*) → 1.0
+      - GitHub, arXiv → 0.90
+      - TechCrunch, Ars Technica → 0.80
+      - Unknown domains → 0.50
+      - Medium, Reddit → 0.40
+  • Validates each URL against the ALLOWED_DOMAINS whitelist and prefixes
+  • Blocks unknown/untrusted domains (SSRF prevention — OWASP A10)
+  • Deduplicates URLs across all queries
+
+Writes to state: search_results (list of {url, title, snippet, authority_score})
+Routed by: _check_search_results → "scraper_strategy" or "no_results"
+
+
+--- STEP 4: SCRAPER STRATEGY (agents/scraper_strategy.py) ---
+
+Purpose: Extract full article content from each URL
+What it does:
+  • For each URL, selects a strategy order based on the domain:
+      - News sites (TechCrunch, Wired) → Newspaper3k first
+      - JS-heavy sites (GitHub, React docs) → Playwright first
+      - Documentation sites → BeautifulSoup first
+      - Unknown → BeautifulSoup first
+
+  • Strategy 1: Newspaper3k — Downloads and parses news articles
+  • Strategy 2: BeautifulSoup — Raw HTML parsing with content extraction
+  • Strategy 3: Playwright — Headless browser rendering for JS-heavy pages
+
+  • Each strategy has its own date extraction using regex patterns
+  • Falls through to the next strategy if one fails
+  • Tracks SCRAPER_ATTEMPTS Prometheus metric per strategy
+  • Caches scraped content in Redis
+
+Writes to state: scraped_articles (list of {url, article_text, publish_date, ...})
+Routed by: _check_scraped_articles → "date_validation" or "no_articles"
+
+
+--- STEP 5: DATE VALIDATION (nodes/date_validation.py) ---
+
+Purpose: Filter out stale content (>7 days old)
+What it does:
+  • Parses each article's publish_date as an ISO-8601 datetime
+  • Compares against the current time minus DATE_WINDOW_DAYS (default: 7)
+  • Articles with no date → conservatively discarded
+  • Articles older than 7 days → discarded with reason logged
+  • Creates an audit trail in Redis
+  • Increments URLS_DISCARDED Prometheus counter per reason
+
+Writes to state: filtered_results, discarded_urls
+Routed by: _check_filtered_after_date → "content_filter" or "all_expired"
+
+
+--- STEP 6: CONTENT FILTER (nodes/content_filter.py) ---
+
+Purpose: Remove non-technical/irrelevant articles
+What it does:
+  • Checks each article for technical keywords (API, SDK, model, benchmark, etc.)
+  • Uses a keyword density threshold to classify relevance
+  • Removes marketing fluff, job postings, and investor relations content
+  • Overwrites filtered_results with only technical articles
+
+Writes to state: filtered_results (overwritten)
+Routed by: _check_filtered_after_content → "authority_check" or "no_technical"
+
+
+--- STEP 7: AUTHORITY CHECK (nodes/authority_check.py) ---
+
+Purpose: Score and rank sources by credibility
+What it does:
+  • Assigns authority scores based on domain reputation tiers
+  • Weighs factors like: official domain, known tech publication, .edu/.gov
+  • Enriches each article's authority_score field
+  • Sorts results by authority (highest first)
+
+Writes to state: filtered_results (enriched with authority scores)
+
+
+--- STEP 8: FEATURE EXTRACTION (nodes/feature_extraction.py) ---
+
+Purpose: Extract structured technical features from article text
+What it does:
+  • Sends each article to the LLM with a prompt requesting structured JSON
+  • Expected output per article: list of features with:
+      - feature_summary (detailed 2-3 sentence description)
+      - category (model_release | api_update | performance | capability)
+      - metrics (quantitative measurements)
+      - evidence (direct quotes from the article)
+  • Cleans LLM response: strips markdown fences, extracts JSON arrays
+  • Validates extracted features against expected schema
+  • Records FEATURES_EXTRACTED Prometheus counter
+
+Writes to state: extracted_features
+Routed by: _check_features → "verification" or "no_features"
+
+
+--- STEP 9: VERIFICATION (nodes/verification.py) ---
+
+Purpose: Cross-reference features across multiple sources using SBERT
+What it does:
+  • Loads the Sentence-BERT model (all-MiniLM-L6-v2)
+  • Encodes all feature summaries into 384-dimensional embeddings
+  • Computes cosine similarity between every pair
+  • Clusters features with similarity ≥ 0.85 (same feature, different source)
+  • Merges clusters into single verified features with:
+      - source_count (how many articles mentioned it)
+      - all_sources (list of URLs)
+      - source_authority (average of source scores)
+  • Records FEATURES_VERIFIED Prometheus counter
+
+Writes to state: verified_features
+
+
+--- STEP 10: CONFIDENCE SCORING (nodes/scoring.py) ---
+
+Purpose: Calculate a final trust score for each feature
+What it does:
+  • Three scoring signals, each producing 0.0 → 1.0:
+      a) RECENCY SCORE: Based on publish date age
+         - Today → 1.0
+         - 7 days old → ~0.5
+         - >14 days → 0.3 (floor)
+         - Missing date → 0.8 (benefit of doubt)
+
+      b) VERIFICATION SCORE: Based on number of corroborating sources
+         - 0 sources → 0.2
+         - 1 source → 0.4
+         - 2 sources → ~0.7
+         - 5+ sources → approaching 1.0 (logarithmic)
+
+      c) AUTHORITY SCORE: Direct pass-through of source_authority (0-1)
+
+  • Final confidence = weighted average:
+      confidence = 0.3 * recency + 0.4 * verification + 0.3 * authority
+
+  • Each feature gets a score_breakdown dict for transparency
+  • Records CONFIDENCE_SCORE Prometheus histogram
+
+Writes to state: scored_features
+
+
+--- STEP 11: SYNTHESIS (agents/synthesis.py) ---
+
+Purpose: Generate the final executive intelligence report
+What it does:
+  • Sends scored features to the LLM with instructions to create:
+      - executive_summary: 3-5 paragraph overview
+      - features: ranked list with titles, descriptions, confidence, citations
+      - all_sources: complete list of URLs used
+  • Features are ranked by confidence score (highest first)
+  • Includes a deterministic fallback report if LLM fails
+  • Validates the report has required keys
+  • Caches the final report in Redis
+  • Records SOURCES_ANALYSED Prometheus histogram
+
+Writes to state: synthesis_report
+
+
+--- ERROR / EARLY-EXIT NODES ---
+
+The pipeline has 5 early-exit nodes for graceful degradation:
+  • no_results → "No search results found for '{company}'"
+  • no_articles → "All URLs failed to scrape"
+  • all_expired → "All articles are older than 7 days"
+  • no_technical → "No technical content found"
+  • no_features → "No extractable features found"
+
+All early-exit nodes → error_exit → error_exit_node → END
+The error_exit_node packages the error into a synthesis_report format
+so the API always returns a consistent response shape.
+
+
+================================================================================
+5. THE API — FASTAPI ENDPOINTS
+================================================================================
+
+All endpoints are defined in app/main.py:
+
+POST /run-agent
+  Input:  { "company_name": "OpenAI" }
+  Output: AgentResponse (executive summary, features list, sources, metadata)
+  What happens:
+    1. Receives the company name via Pydantic-validated request body
+    2. Increments ACTIVE_PIPELINES gauge
+    3. Invokes the compiled LangGraph pipeline with {"company_name": name}
+    4. Extracts the synthesis_report from the final state
+    5. Saves the report + features to PostgreSQL via CRUD operations
+    6. Decrements ACTIVE_PIPELINES gauge
+    7. Records PIPELINE_RUNS counter (completed/error)
+    8. Returns the structured AgentResponse
+
+GET /reports/{company_name}?limit=10
+  Returns historical pipeline reports for a company from PostgreSQL
+
+GET /features/{company_name}?limit=50
+  Returns all extracted features for a company from PostgreSQL
+
+GET /competitors
+  Returns all tracked companies from PostgreSQL
+
+POST /competitors
+  Creates a new company entry in the database
+
+GET /health
+  Returns { status: "healthy", version: "2.0.0", timestamp: "..." }
+
+GET /metrics
+  Returns Prometheus metrics in text exposition format (scraped by Prometheus)
+
+GET /docs
+  Auto-generated Swagger/OpenAPI documentation
+
+
+================================================================================
+6. THE DATABASE — POSTGRESQL + SQLALCHEMY
+================================================================================
+
+3 tables, defined in database/models.py:
+
+TABLE: competitors
+  ├── id           (PK, auto-increment)
+  ├── name         (unique, indexed)
+  ├── industry     (default: "technology")
+  └── created_at   (UTC timestamp)
+
+TABLE: reports
+  ├── id                (PK, auto-increment)
+  ├── competitor_id     (FK → competitors.id)
+  ├── executive_summary (Text)
+  ├── total_sources     (Integer)
+  ├── total_features    (Integer)
+  ├── all_sources       (JSON array of URLs)
+  ├── metadata          (JSON)
+  └── created_at        (UTC timestamp)
+
+TABLE: features
+  ├── id                (PK, auto-increment)
+  ├── competitor_id     (FK → competitors.id)
+  ├── report_id         (FK → reports.id)
+  ├── feature_title     (Short title, max 10 words)
+  ├── feature_text      (Detailed 2-3 sentence summary)
+  ├── description       (Full description from synthesis)
+  ├── category          (model_release | api_update | performance | capability)
+  ├── confidence_score  (Float 0.0-1.0)
+  ├── source_count      (Integer)
+  ├── source_url        (String)
+  ├── evidence          (Text — direct quotes)
+  ├── metrics           (JSON array)
+  └── created_at        (UTC timestamp)
+
+Relationships:
+  Competitor → has many → Reports → has many → Features
+
+Files involved:
+  • database/session.py  — Creates the SQLAlchemy engine and session factory
+  • database/models.py   — Defines the 3 table classes
+  • database/schemas.py  — Pydantic schemas for CRUD input/output validation
+  • database/crud.py     — Create/read operations for all 3 tables
+
+
+================================================================================
+7. THE CACHE — REDIS
+================================================================================
+
+Defined in cache/redis_client.py. Redis is used for 4 purposes:
+
+1. RESULT CACHING
+   • Search queries, scraped articles, and reports are cached with a 6-hour TTL
+   • Key format: "mscout:{prefix}:{sha256_hash}"
+   • Functions: get_cache(key), set_cache(key, value, expire)
+   • CACHE_OPERATIONS Prometheus counter tracks hit/miss/error
+
+2. RATE LIMITING
+   • check_rate_limit(client_ip) → True if within limits
+   • 10 requests per 60-second window (configurable)
+   • Uses Redis INCR + EXPIRE for atomic counting
+
+3. AUDIT LOGGING
+   • append_audit_log(key, entry) → Appends to a Redis list
+   • Used by date_validation to record why URLs were discarded
+
+4. KEY GENERATION
+   • make_cache_key(prefix, data) → "mscout:{prefix}:{sha256}"
+   • Deterministic: same input always produces same key
+   • Uses SHA-256 hashing of the serialised data
+
+
+================================================================================
+8. THE LLM CLIENT — NVIDIA NIM
+================================================================================
+
+Defined in llm/nvidia_client.py.
+
+How it works:
+  • Uses the OpenAI Python SDK (openai.OpenAI class) pointed at NVIDIA's API
+  • Base URL: https://integrate.api.nvidia.com/v1
+  • Model: meta/llama-3.3-70b-instruct
+  • Parameters: temperature=0.2, top_p=0.7, max_tokens=4096
+
+Architecture:
+  • Singleton pattern: one OpenAI client reused across all requests
+  • invoke_llm(messages, max_tokens, temperature) → returns response text
+  • Built-in retry logic with exponential backoff (up to MAX_RETRIES=3)
+  • Prometheus metrics automatically recorded:
+      - LLM_CALL_COUNT: success/failure/retry per agent
+      - LLM_LATENCY: histogram of call duration
+      - LLM_TOKEN_USAGE: prompt and completion tokens per agent
+  • Agent name is inferred from the system prompt content
+
+
+================================================================================
+9. OBSERVABILITY — PROMETHEUS + GRAFANA
+================================================================================
+
+14 Prometheus metrics defined in observability/metrics.py:
+
+API METRICS (recorded in main.py middleware):
+  1. api_requests_total        — Counter by endpoint, method, status
+  2. api_request_duration_secs — Histogram by endpoint
+
+PIPELINE METRICS (recorded in builder.py + main.py):
+  3. node_latency_seconds      — Histogram per node (via _instrument_node wrapper)
+  4. node_executions_total     — Counter per node, success/failure
+  5. pipeline_runs_total       — Counter: completed/error/guardrail_blocked
+  6. active_pipelines          — Gauge: currently running pipelines
+
+LLM METRICS (recorded in nvidia_client.py):
+  7. llm_tokens_total          — Counter by agent + token type
+  8. llm_calls_total           — Counter by agent + status
+  9. llm_call_duration_seconds — Histogram by agent
+
+INTELLIGENCE METRICS (recorded in main.py + extraction/verification):
+  10. features_extracted_total  — Counter by company + category
+  11. features_verified_total   — Counter by company
+  12. feature_confidence_score  — Histogram of score distribution
+  13. sources_analysed_per_run  — Histogram
+
+CACHE + SCRAPER METRICS (recorded in redis_client.py + scraper_strategy.py):
+  14a. cache_operations_total   — Counter: get/set × hit/miss/error
+  14b. scraper_attempts_total   — Counter: strategy × success/failure
+  14c. urls_discarded_total     — Counter: expired/no_date
+
+How metrics flow:
+  App → /metrics endpoint → Prometheus scrapes every 15s → Grafana queries
+
+Grafana Dashboard (monitoring/grafana/dashboards/market_scout.json):
+  • 16 panels in 4 collapsible rows:
+    Row 1 "Pipeline Overview": Total Runs, Success Rate, Active, Avg Time, Verified, Discarded
+    Row 2 "Pipeline Performance": Runs over time (stacked bars), Node latency (smooth lines)
+    Row 3 "LLM & Intelligence": Calls by agent, Token usage, LLM latency, Confidence distribution
+    Row 4 "Scraping & Cache": Strategy performance, Cache hit/miss, Features by category, Sources
+
+
+================================================================================
+10. THE FRONTEND — REACT APPLICATION
+================================================================================
+
+Built with Vite + React 19, located in frontend/.
+
+DESIGN SYSTEM (src/index.css):
+  • Dark theme with carefully chosen color palette
+  • CSS custom properties for all colors, fonts, spacing, shadows
+  • Glassmorphism cards with backdrop-filter blur
+  • Animations: fadeInUp, fadeIn, shimmer, spin, slide-in-right
+  • Staggered child animations for lists
+  • Custom scrollbar styling
+  • Responsive breakpoints
+
+LAYOUT COMPONENTS:
+  • Sidebar (src/components/Sidebar.jsx)
+    - Fixed left sidebar with navigation links
+    - 4 internal routes: Dashboard, Run Pipeline, Reports, Competitors
+    - 3 external links: API Docs, Prometheus, Grafana
+    - Brand header with logo and version badge
+
+  • Header (src/components/Header.jsx)
+    - Fixed top bar with frosted glass effect
+    - Dynamic page title based on current route
+    - Backend connection status indicator
+
+PAGES:
+  • Dashboard (src/pages/Dashboard.jsx)
+    - 4 stat cards: Tracked Companies, System Status, LLM Engine, Recency Window
+    - 3 quick-action cards linking to Run Pipeline, Reports, Competitors
+    - Pipeline architecture visualisation showing all 11 nodes
+
+  • Run Pipeline (src/pages/RunPipeline.jsx)
+    - Company name input with search icon
+    - Run button with loading spinner animation
+    - Shimmer progress bar during pipeline execution
+    - Full results display: executive summary, ranked features, confidence badges,
+      category tags, source links, and all-sources list
+    - Error state display with descriptive messages
+
+  • Reports (src/pages/Reports.jsx)
+    - Search form to find reports by company name
+    - Expandable report cards showing executive summary and sources
+    - Empty state when no reports found
+
+  • Competitors (src/pages/Competitors.jsx)
+    - Grid of tracked companies with avatar, industry badge, date
+    - "Analyze" button per company to quickly run a new pipeline
+    - Empty state with prompt to run the first pipeline
+
+API SERVICE LAYER (src/api.js):
+  • runPipeline(companyName)  → POST /run-agent
+  • getReports(companyName)   → GET /reports/{name}
+  • getFeatures(companyName)  → GET /features/{name}
+  • getCompetitors()          → GET /competitors
+  • getHealth()               → GET /health
+  • All functions use fetch() with JSON parsing and error handling
+  • Backend URL: http://localhost:8000
+
+
+================================================================================
+11. DOCKER INFRASTRUCTURE
+================================================================================
+
+5 services defined in docker-compose.yaml:
+
+SERVICE 1: app (Market Scout API)
+  • Built from Dockerfile
+  • Port 8000 → FastAPI
+  • Depends on: postgres (healthy), redis
+  • Gets API keys from .env file
+
+SERVICE 2: postgres (PostgreSQL 15)
+  • Port 5433 → 5432 (internal)
+  • Database: market_db
+  • Credentials: admin/admin
+  • Health check: pg_isready every 5s
+  • Volume: postgres_data (persistent)
+
+SERVICE 3: redis (Redis 7 Alpine)
+  • Port 6379
+  • Volume: redis_data (persistent)
+
+SERVICE 4: prometheus
+  • Port 9090
+  • Config: monitoring/prometheus.yml
+  • Scrapes localhost:8000/metrics every 15s
+  • Volume: prometheus_data (persistent)
+
+SERVICE 5: grafana
+  • Port 3000
+  • Credentials: admin/admin
+  • Auto-provisions dashboard from monitoring/grafana/
+  • Depends on: prometheus
+  • Volume: grafana_data (persistent)
+
+All services on the same Docker network: scout_net (bridge driver)
+
+
+================================================================================
+12. SECURITY IMPLEMENTATION (OWASP)
+================================================================================
+
+A03 — INJECTION PREVENTION:
+  • HTML tag stripping in guardrails
+  • Regex-based format validation
+  • Blocked keyword detection (hack, exploit, jailbreak, etc.)
+  • Pydantic schema validation on all API inputs
+
+A05 — SECURITY MISCONFIGURATION:
+  • All secrets in .env file, never hardcoded in source
+  • Pydantic BaseSettings reads from environment variables
+
+A07 — XSS PREVENTION:
+  • HTML entity unescaping + sanitisation
+  • Structured JSON responses (no raw HTML in output)
+
+A10 — SSRF PREVENTION:
+  • Domain allowlist in config.py (ALLOWED_DOMAINS)
+  • Prefix-based allowlist (docs.*, developer.*, blog.*)
+  • Every scraped URL checked against the allowlist
+  • Unknown domains are blocked and logged
+
+RATE LIMITING:
+  • Redis-backed counter: 10 requests per 60-second window
+  • Enforced in the guardrails node before any LLM call
+
+
+================================================================================
+13. HOW TO RUN THE PROJECT
+================================================================================
+
+PREREQUISITES:
+  • Docker Desktop installed and running
+  • Node.js 18+ installed (for frontend)
+  • Python 3.10+ with venv (already set up)
+  • API keys in .env file:
+      NVIDIA_API_KEY=your_key_here
+      TAVILY_API_KEY=your_key_here
+
+STEP 1: Start infrastructure (PostgreSQL, Redis, Prometheus, Grafana)
+  > docker compose up -d postgres redis prometheus grafana
+
+STEP 2: Start the backend
+  > cd c:\Users\Sindhu\Desktop\Market_Scout
+  > .\venv\Scripts\activate
+  > uvicorn app.main:app --reload
+
+STEP 3: Start the frontend
+  > cd c:\Users\Sindhu\Desktop\Market_Scout\frontend
+  > npm run dev
+
+ACCESS POINTS:
+  • Frontend:    http://localhost:5173
+  • Backend API: http://localhost:8000
+  • Swagger Docs:http://localhost:8000/docs
+  • Metrics:     http://localhost:8000/metrics
+  • Prometheus:  http://localhost:9090
+  • Grafana:     http://localhost:3000 (admin/admin)
+
+
+================================================================================
+14. DATA FLOW — COMPLETE REQUEST LIFECYCLE
+================================================================================
+
+User types "OpenAI" in the frontend → clicks "Run Pipeline"
+  ↓
+Frontend sends POST http://localhost:8000/run-agent {"company_name":"OpenAI"}
+  ↓
+FastAPI validates request via Pydantic (AgentRequest schema)
+  ↓
+ACTIVE_PIPELINES gauge incremented (+1)
+  ↓
+LangGraph pipeline invoked: graph.invoke({"company_name": "OpenAI"})
+  ↓
+Node 1: Guardrails → sanitise "OpenAI", check format, check keywords, check rate limit
+  ↓ (passes)
+Node 2: Search Planner → LLM generates ["OpenAI release notes 2026", "OpenAI API updates", ...]
+  ↓
+Node 3: Search Execution → Tavily returns 15 URLs, domain scoring + allowlist filtering
+  ↓ (e.g. 12 URLs pass)
+Node 4: Scraper Strategy → For each URL: try Newspaper3k → BS4 → Playwright
+  ↓ (e.g. 10 articles scraped)
+Node 5: Date Validation → Filter to articles ≤ 7 days old, discard rest
+  ↓ (e.g. 7 articles pass)
+Node 6: Content Filter → Keep only technical articles
+  ↓ (e.g. 5 articles remain)
+Node 7: Authority Check → Rank by source credibility
+  ↓
+Node 8: Feature Extraction → LLM extracts structured features from each article
+  ↓ (e.g. 12 raw features)
+Node 9: Verification → SBERT clusters similar features → 8 unique features
+  ↓
+Node 10: Scoring → confidence = 0.3*recency + 0.4*verification + 0.3*authority
+  ↓
+Node 11: Synthesis → LLM generates executive summary + ranked feature report
+  ↓
+Pipeline complete → returns synthesis_report in GraphState
+  ↓
+FastAPI saves report + features to PostgreSQL (via CRUD layer)
+  ↓
+ACTIVE_PIPELINES gauge decremented (-1)
+PIPELINE_RUNS counter incremented (status="completed")
+  ↓
+Returns AgentResponse JSON to frontend
+  ↓
+Frontend renders: executive summary, feature cards with confidence badges, sources
+
+
+================================================================================
+15. CONFIGURATION REFERENCE
+================================================================================
+
+All settings in app/config.py (overridable via .env):
+
+  APP_NAME:              "Market Intelligence Scout"
+  DEBUG:                 False
+  NVIDIA_API_KEY:        (from .env)
+  LLM_MODEL:             "meta/llama-3.3-70b-instruct"
+  LLM_MAX_TOKENS:        4096
+  LLM_TEMPERATURE:       0.2
+  LLM_TOP_P:             0.7
+  TAVILY_API_KEY:        (from .env)
+  SEARCH_DEPTH:          "advanced"
+  SEARCH_MAX_RESULTS:    15
+  DATABASE_URL:          "postgresql://admin:admin@127.0.0.1:5433/market_db"
+  REDIS_HOST:            "localhost"
+  REDIS_PORT:            6379
+  CACHE_EXPIRY:          21600 (6 hours)
+  MAX_INPUT_LENGTH:      200
+  RATE_LIMIT_REQUESTS:   10
+  RATE_LIMIT_WINDOW:     60
+  SCRAPE_TIMEOUT:        15
+  MAX_ARTICLE_LENGTH:    8000
+  SBERT_MODEL:           "all-MiniLM-L6-v2"
+  SIMILARITY_THRESHOLD:  0.85
+  DATE_WINDOW_DAYS:      7
+  MAX_RETRIES:           3
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================
