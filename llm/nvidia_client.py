@@ -140,3 +140,31 @@ def invoke_llm(
     raise RuntimeError(
         f"LLM invocation failed after {retries} attempts: {last_error}"
     ) from last_error
+
+# ────────────────────────────────────────────────────────────────────
+# Tool-Calling LLM Invocation (For Agentic Execution)
+# ────────────────────────────────────────────────────────────────────
+
+def invoke_llm_with_tools(
+    messages: List[Dict[str, str]],
+    tools: List[Dict],
+    temperature: float = settings.LLM_TEMPERATURE,
+    max_tokens: int = settings.LLM_MAX_TOKENS,
+):
+    """
+    Call NVIDIA LLM with OpenAI-style function/tool calling enabled.
+    Returns full response object (NOT just content).
+    """
+    client = _get_client()
+
+    response = client.chat.completions.create(
+        model=settings.LLM_MODEL,
+        messages=messages,
+        tools=tools,
+        tool_choice="auto",
+        temperature=temperature,
+        max_tokens=max_tokens,
+        top_p=settings.LLM_TOP_P,
+    )
+
+    return response
