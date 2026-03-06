@@ -2,11 +2,9 @@ from typing import Dict, Any, List
 from graph.state import GraphState
 import time
 import logging
-from .memory import (
-    get_article, save_article,
-    load_agent_memory, save_agent_memory
-)
-from .planner import decide_strategy, should_stop
+
+from .memory import get_article, save_article, load_agent_memory, save_agent_memory
+from .planner import decide_strategy
 from .critic import is_technical
 from .tools import newspaper, bs4, playwright
 
@@ -18,6 +16,8 @@ TOOLS = {
     "playwright": playwright.scrape,
 }
 
+MAX_FAILURES_PER_URL = 3
+
 
 def scraper_agent_node(state: GraphState) -> Dict[str, Any]:
     start_time = time.time()
@@ -27,128 +27,90 @@ def scraper_agent_node(state: GraphState) -> Dict[str, Any]:
 
     logger.info(
         "SCRAPER AGENT — Started | Company: %s | URLs received: %d",
-        company,
-        len(urls),
+        company, len(urls)
     )
 
     memory = load_agent_memory(company)
-    logger.info(
-        "SCRAPER AGENT — Memory loaded | Failures: %d",
-        memory.get("failures", 0),
-    )
-
     scraped: List[Dict[str, Any]] = []
 
     for idx, item in enumerate(urls, start=1):
         url = item["url"]
+        failures = 0
 
-        logger.info("SCRAPER AGENT — Processing URL %d/%d: %s", idx, len(urls), url)
+        logger.info("SCRAPER AGENT — Processing URL %d/%d", idx, len(urls))
 
-        if should_stop(memory):
-            logger.warning(
-                "SCRAPER AGENT — Stopping early due to failure threshold | Failures: %d",
-                memory.get("failures", 0),
-            )
-            break
-
-        # 🔎 Cache Check
+        # ── Cache check ─────────────────────────────
         cached = get_article(url)
         if cached:
-            logger.info("SCRAPER — Cache hit for %s", url)
+            logger.info("SCRAPER — Cache hit | %s", url)
             scraped.append(cached)
             continue
 
         strategies = decide_strategy(url)
-        logger.info(
-            "SCRAPER — Strategies decided for %s: %s",
-            url,
-            strategies,
-        )
-
         result = None
 
-        for s in strategies:
-            logger.info("SCRAPER — Trying tool: %s | URL: %s", s, url)
+        # ── Try strategies ─────────────────────────
+        for strategy in strategies:
+            try:
+                logger.info("SCRAPER — Trying tool: %s", strategy)
+                result = TOOLS[strategy](url)
 
-            url_start = time.time()
-            result = TOOLS[s](url)
-            elapsed = round(time.time() - url_start, 2)
+                if result and result.get("text"):
+                    logger.info("SCRAPER — Tool succeeded: %s", strategy)
+                    break
 
-            if result and "text" in result:
-                logger.info(
-                    "SCRAPER — Tool %s succeeded | Time: %ss | Text length: %d",
-                    s,
-                    elapsed,
-                    len(result["text"]),
+                failures += 1
+
+            except Exception as e:
+                failures += 1
+                logger.debug(
+                    "SCRAPER — Tool exception | %s | %s",
+                    strategy, str(e)
+                )
+
+            # 🔥 EARLY STOP ONLY FOR THIS URL
+            if failures >= MAX_FAILURES_PER_URL:
+                logger.warning(
+                    "SCRAPER — Skipping URL after %d failures | %s",
+                    failures, url
                 )
                 break
-            else:
-                logger.warning(
-                    "SCRAPER — Tool %s failed | Time: %ss",
-                    s,
-                    elapsed,
-                )
 
-        # No result
-        if not result:
-            memory["failures"] = memory.get("failures", 0) + 1
-            logger.warning(
-                "SCRAPER — No result for %s | Failures: %d",
-                url,
-                memory["failures"],
-            )
+        # ── No usable content ──────────────────────
+        if not result or not result.get("text"):
             continue
 
-        text = result.get("text")
-        if not text:
-            memory["failures"] = memory.get("failures", 0) + 1
-            logger.warning(
-                "SCRAPER — Empty text for %s | Failures: %d",
-                url,
-                memory["failures"],
-            )
-            continue
-
-        # Critic Timing
-        critic_start = time.time()
-        technical = is_technical(text)
-        critic_elapsed = round(time.time() - critic_start, 2)
-
+        # ── Critic ─────────────────────────────────
+        technical = is_technical(result["text"])
         logger.info(
-            "SCRAPER — Critic evaluated | URL: %s | Technical: %s | Time: %ss",
-            url,
-            technical,
-            critic_elapsed,
+            "SCRAPER — Critic decision | Technical: %s", technical
         )
 
         if not technical:
-            memory["failures"] = memory.get("failures", 0) + 1
             continue
 
+        # ── Save article ───────────────────────────
         article = {
             "url": url,
-            "title": result["title"],
+            "title": result.get("title"),
             "article_text": result["text"],
-            "publish_date": str(result["date"]) if result["date"] else None,
-            "scraper_used": result["tool"],
+            "publish_date": str(result.get("date")) if result.get("date") else None,
+            "scraper_used": result.get("tool"),
         }
 
         save_article(url, article)
         scraped.append(article)
 
         logger.info(
-            "SCRAPER — Article saved | URL: %s | Scraper: %s",
-            url,
-            result["tool"],
+            "SCRAPER — Article saved | Tool: %s", result.get("tool")
         )
 
     save_agent_memory(company, memory)
 
-    total_elapsed = round(time.time() - start_time, 2)
     logger.info(
-        "SCRAPER AGENT — Completed | Articles scraped: %d | Total time: %ss",
+        "SCRAPER AGENT — Completed | Articles scraped: %d | Time: %.2fs",
         len(scraped),
-        total_elapsed,
+        time.time() - start_time,
     )
 
     return {"scraped_articles": scraped}

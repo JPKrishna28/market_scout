@@ -204,16 +204,15 @@ def build_graph():
     builder.add_edge("scoring", "synthesis")
     builder.add_edge("synthesis", END)
 
-    # ── All Early Exit → Error Exit → END ─────────────────────────
+   # ── Early exits go straight to END ─────────────────────────
     for node in [
         "no_results",
         "no_articles",
         "all_expired",
         "no_technical",
         "no_features",
-        "error_exit",
     ]:
-        builder.add_edge(node, "error_exit")
+        builder.add_edge(node, END)
 
     builder.add_edge("error_exit", END)
 
