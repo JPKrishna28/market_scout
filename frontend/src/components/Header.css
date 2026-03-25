@@ -4,9 +4,12 @@
     left: var(--sidebar-width);
     right: 0;
     height: var(--header-height);
-    background: rgba(10, 14, 26, 0.85);
+
+    background: var(--bg-card);
+
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border-subtle);
+
     display: flex;
     align-items: center;
     justify-content: space-between;

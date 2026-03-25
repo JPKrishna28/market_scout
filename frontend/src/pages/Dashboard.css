@@ -1,4 +1,4 @@
-.dashboard-grid {
+/* .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px;
@@ -67,7 +67,7 @@
     transform: translateX(4px);
 }
 
-/* Pipeline visualization */
+
 .pipeline-info h3 {
     font-size: 1.05rem;
     font-weight: 600;
@@ -123,4 +123,4 @@
 .step-info span {
     font-size: 0.68rem;
     color: var(--text-muted);
-}
+} */

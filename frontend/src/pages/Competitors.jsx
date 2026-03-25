@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiOutlineUserGroup, HiOutlinePlay, HiOutlineCalendar } from 'react-icons/hi';
 import { getCompetitors } from '../api';
-import './Competitors.css';
 
 export default function Competitors() {
     const [competitors, setCompetitors] = useState([]);
@@ -31,31 +30,32 @@ export default function Competitors() {
             </div>
 
             {loading && (
-                <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-                    <div className="spinner spinner-lg" style={{ margin: '0 auto 12px' }} />
-                    <p style={{ color: 'var(--text-secondary)' }}>Loading competitors...</p>
-                </div>
+                <div className="card flex flex-col items-center justify-center py-10">
+                <div className="spinner spinner-lg mb-3" />
+                <p className="text-[var(--text-secondary)]">Loading competitors...</p>
+            </div>
             )}
 
             {!loading && competitors.length === 0 && (
-                <div className="empty-state">
+              <div className="empty-state flex flex-col items-center justify-center text-center mt-20">
                     <div className="icon"><HiOutlineUserGroup /></div>
                     <h3>No competitors tracked yet</h3>
                     <p>Run the intelligence pipeline on a company to start tracking them.</p>
-                    <button className="btn btn-primary" style={{ marginTop: '16px' }} onClick={() => navigate('/run')}>
+                    <button className="btn btn-primary mt-4" onClick={() => navigate('/run')}>
                         <HiOutlinePlay /> Run Pipeline
                     </button>
                 </div>
             )}
 
             {!loading && competitors.length > 0 && (
-                <div className="competitors-grid stagger">
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 stagger">
                     {competitors.map((comp, i) => (
-                        <div key={comp.id || i} className="card competitor-card fade-in-up">
-                            <div className="competitor-avatar">
+                        <div key={comp.id || i} className="card fade-in-up flex items-center justify-between gap-4">
+                            <div className="w-12 h-12 flex items-center justify-center rounded-[var(--radius-md)] 
+bg-[rgba(99,102,241,0.15)] text-[var(--accent-secondary)] font-bold text-lg">
                                 {(comp.name || '?')[0].toUpperCase()}
                             </div>
-                            <div className="competitor-info">
+                            <div className="flex flex-col flex-1">
                                 <h3>{comp.name}</h3>
                                 {comp.industry && <span className="badge badge-info">{comp.industry}</span>}
                                 {comp.created_at && (

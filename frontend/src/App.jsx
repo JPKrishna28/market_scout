@@ -5,13 +5,12 @@ import Dashboard from './pages/Dashboard';
 import RunPipeline from './pages/RunPipeline';
 import Reports from './pages/Reports';
 import Competitors from './pages/Competitors';
-
 export default function App() {
   return (
     <BrowserRouter>
       <div className="app-layout">
         <Sidebar />
-        <Header />
+        {/* <Header /> */}
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Dashboard />} />
