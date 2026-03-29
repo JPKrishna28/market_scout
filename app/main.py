@@ -152,11 +152,20 @@ app = FastAPI(
 )
 
 # CORS
+allowed_origins = [
+    "http://localhost:5173",  # Vite dev server
+    "http://localhost:3000",  # Alternative dev port
+    "https://api.market-scout.me",
+    "https://market-scout.me",
+]
+if settings.DEBUG:
+    allowed_origins.extend(["http://127.0.0.1:5173", "http://127.0.0.1:3000"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
