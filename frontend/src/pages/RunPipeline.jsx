@@ -40,7 +40,7 @@ export default function RunPipeline() {
 
     <div className="relative flex-1">
 
-      <HiOutlineSparkles className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--accent-secondary)] text-lg" />
+      
 
       <input
         type="text"
