@@ -17,10 +17,23 @@
     z-index: 90;
 }
 
+@media (max-width: 767px) {
+    .header {
+        left: 0;
+        padding: 0 16px;
+    }
+}
+
 .header-title {
     font-size: 1.15rem;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+@media (max-width: 767px) {
+    .header-title {
+        font-size: 0.95rem;
+    }
 }
 
 .header-right {
@@ -37,6 +50,16 @@
     background: var(--success-bg);
     border-radius: 20px;
     border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+@media (max-width: 767px) {
+    .header-status {
+        padding: 4px 10px;
+    }
+    
+    .status-text {
+        display: none;
+    }
 }
 
 .status-dot {
