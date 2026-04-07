@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # ── NVIDIA LLM ─────────────────────────────────────────────────
     NVIDIA_API_KEY: str = os.getenv("NVIDIA_API_KEY", "")
-    LLM_MODEL: str = "meta/llama-3.3-70b-instruct"
+    LLM_MODEL: str = "meta/llama-3.1-8b-instruct"
     LLM_MAX_TOKENS: int = 4096
     LLM_TEMPERATURE: float = 0.2
     LLM_TOP_P: float = 0.7
