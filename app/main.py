@@ -157,6 +157,7 @@ allowed_origins = [
     "http://localhost:3000",  # Alternative dev port
     "https://api.market-scout.me",
     "https://market-scout.me",
+    "https://www.market-scout.me",
 ]
 if settings.DEBUG:
     allowed_origins.extend(["http://127.0.0.1:5173", "http://127.0.0.1:3000"])
